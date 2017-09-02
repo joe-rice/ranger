@@ -52,7 +52,13 @@ def register_image_displayer(nickname=None):
     return decorator
 
 class ImageDisplayer(object):
-    """Image display provider functions for drawing images in the terminal"""
+    """Provide functions for drawing images in the terminal"""
+
+    @staticmethod
+    def check():
+        """Guess if this ImageDisplayer will run."""
+        return False # pessimistic by default
+        #  raise NotImplemented
 
     def draw(self, path, start_x, start_y, width, height):
         """Draw an image at the given coordinates."""
@@ -71,9 +77,21 @@ class ImageDisplayer(object):
 def AutoImageDisplayer():
     """Automatically select a context-appropriate ImageDisplayer."""
 
-    # TODO
+    try_order = [
+        ITerm2ImageDisplayer,
+        URXVTImageDisplayer,
+        #  MPVImageDisplayer,
+        W3MImageDisplayer,
+        #  ImageDisplayer,
+        #  ASCIIImageDisplayer,
+        ]
+
+    for displayer in try_order:
+        if displayer.check():
+            return displayer()
 
     raise ImgDisplayUnsupportedException
+    #  raise NoImageDisplayerFound
 
 
 @register_image_displayer("w3m")
@@ -86,6 +104,10 @@ class W3MImageDisplayer(ImageDisplayer):
     w3m need to be installed for this to work.
     """
     is_initialized = False
+
+    @staticmethod
+    def check():
+        return any(os.path.exists(path) for path in W3MIMGDISPLAY_PATHS)
 
     def __init__(self):
         self.binary_path = None
@@ -227,6 +249,14 @@ class ITerm2ImageDisplayer(ImageDisplayer, FileManagerAware):
     _minimum_font_width = 8
     _minimum_font_height = 11
 
+    @staticmethod
+    def check():
+        # Is the name of the binary iterm or iterm2?
+        return False
+        #  return os.environ.get('TERM', '').startswith('iterm2')
+        # TERM value?
+        # EXE name?
+
     def draw(self, path, start_x, start_y, width, height):
         curses.putp(curses.tigetstr("sc"))
         tparm = curses.tparm(curses.tigetstr("cup"), start_y, start_x)
@@ -340,6 +370,10 @@ class URXVTImageDisplayer(ImageDisplayer, FileManagerAware):
     Ranger must be running in urxvt for this to work.
 
     """
+
+    @staticmethod
+    def check():
+        return os.environ.get('TERM', '').startswith('urxvt')
 
     def __init__(self):
         self.display_protocol = "\033"
