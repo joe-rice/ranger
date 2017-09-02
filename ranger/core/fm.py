@@ -22,8 +22,7 @@ from ranger.container.tags import Tags, TagsDummy
 from ranger.gui.ui import UI
 from ranger.container.bookmarks import Bookmarks
 from ranger.core.runner import Runner
-from ranger.ext.img_display import (W3MImageDisplayer, ITerm2ImageDisplayer,
-                                    URXVTImageDisplayer, URXVTImageFSDisplayer, ImageDisplayer)
+from ranger.ext.img_display import image_displayers, AutoImageDisplayer
 from ranger.core.metadata import MetadataManager
 from ranger.ext.rifle import Rifle
 from ranger.container.directory import Directory
@@ -217,14 +216,8 @@ class FM(Actions,  # pylint: disable=too-many-instance-attributes
                 yield line
 
     def _get_image_displayer(self):
-        if self.settings.preview_images_method == "w3m":
-            return W3MImageDisplayer()
-        elif self.settings.preview_images_method == "iterm2":
-            return ITerm2ImageDisplayer()
-        elif self.settings.preview_images_method == "urxvt":
-            return URXVTImageDisplayer()
-        elif self.settings.preview_images_method == "urxvt-full":
-            return URXVTImageFSDisplayer()
+        key = self.settings.preview_images_method
+        ImageDisplayer = image_displayers.get(key, AutoImageDisplayer)
         return ImageDisplayer()
 
     def _get_thisfile(self):
